@@ -67,3 +67,16 @@ def test_file_cannot_be_downloaded_after_deletion(client: TestClient):
 
     download_resp = client.get(file_hash)
     assert download_resp.status_code == 404
+
+
+def test_hash_content_type_is_plaintext(client: TestClient):
+    resp = client.post("", data=b"Test data")
+    assert resp.headers["content-type"].startswith("text/plain")
+
+
+def test_file_content_type_is_binary(client: TestClient):
+    upload_resp = client.post("", data=b"Test data")
+    file_hash = upload_resp.text
+
+    download_resp = client.get(file_hash)
+    assert download_resp.headers["content-type"] == "application/octet-stream"

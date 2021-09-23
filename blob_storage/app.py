@@ -124,7 +124,7 @@ class App:
     async def upload_file(self, request: Request) -> Response:
         exists, file_hash = await self._storage.upload(request.stream())
         status_code = status.HTTP_200_OK if exists else status.HTTP_201_CREATED
-        return Response(file_hash, status_code)
+        return Response(file_hash, status_code, media_type="text/plain")
 
     async def download_file(self, request: Request) -> Response:
         file_hash = request.path_params["hash"]
@@ -134,7 +134,7 @@ class App:
         if stream is None:
             return Response("File not found", status_code=status.HTTP_404_NOT_FOUND)
 
-        return StreamingResponse(stream)
+        return StreamingResponse(stream, media_type="application/octet-stream")
 
     async def delete_file(self, request: Request) -> Response:
         file_hash = request.path_params["hash"]
