@@ -23,19 +23,19 @@ Stream = AsyncIterator[bytes]
 class Storage(Protocol):
     async def find(self, key: str, /) -> Optional[Stream]:
         """
-        Find a binary file I/O object by unique key.
+        Find a file by key and return an async generator with its contents.
 
-        It's the responsibility of the caller to close it.
+        Returns `None` if the file wasn't found.
         """
 
     async def upload(self, stream: Stream, /) -> tuple[bool, str]:
         """
-        :return: (file already exists, key)
+        Returns a pair of (file already exists, key)
         """
 
     async def delete(self, key: str, /) -> None:
         """
-        :raises: KeyError
+        :raises: KeyError if the file wasn't found
         """
 
 
@@ -54,8 +54,8 @@ async def _move_file(source: Path, destination: Path):
 class FileStorage:
     def __init__(self, base_path: Path, chunk_size: int):
         """
-        :base_path: Path where files will be stored by their hash
-        :chunk_size: How long to make the `bytes` chunks returned by `find`
+        :param base_path: Path where files will be stored by their hash
+        :param chunk_size: How long to make the `bytes` chunks returned by `find`
         """
         self._base_path = base_path
         self._chunk_size = chunk_size

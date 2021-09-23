@@ -16,3 +16,7 @@ uvicorn blob_storage.app:app --host 127.0.0.1 --port 8108 --reload --reload-dir 
 ```sh
 python -m pytest
 ```
+
+## Documentation
+
+OpenAPI schema is stored in `openapi.yaml`

@@ -6,13 +6,14 @@ Stream = AsyncIterator[bytes]
 
 
 class MemoryStorage:
+    """
+    Fake in-memory storage for unit-testing purposes
+    """
+
     def __init__(self):
         self._files: dict[str, bytes] = {}
+
     async def find(self, key: str) -> Optional[Stream]:
-        """
-        Async context manager that provides an async iterator of `bytes` chunks
-        and closes all opened resources when the `async with` block ends.
-        """
         content = self._files.get(key)
         if content is None:
             return None
@@ -23,9 +24,6 @@ class MemoryStorage:
         return _find()
 
     async def upload(self, stream: Stream) -> tuple[bool, str]:
-        """
-        :return: (file already exists, hash digest)
-        """
         h = hashlib.sha512()
 
         chunks = []
@@ -41,7 +39,4 @@ class MemoryStorage:
         return False, file_hash
 
     async def delete(self, key: str) -> None:
-        """
-        :raises: KeyError
-        """
         self._files.pop(key)
