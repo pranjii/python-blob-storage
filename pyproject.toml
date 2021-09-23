@@ -11,6 +11,8 @@ aiofiles = "^0.7.0"
 uvicorn = {extras = ["standard"], version = "^0.15.0"}
 
 [tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+requests = "^2.26.0"  # for starlette.TestClient
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -10,3 +10,9 @@
 ```sh
 uvicorn blob_storage.app:app --host 127.0.0.1 --port 8108 --reload --reload-dir blob_storage/
 ```
+
+## Testing
+
+```sh
+python -m pytest
+```
