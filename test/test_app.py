@@ -1,7 +1,7 @@
 import pytest
 from starlette.testclient import TestClient
 
-from blob_storage.app import App
+from blob_storage.base_app import App
 from test.memory_storage import MemoryStorage
 
 

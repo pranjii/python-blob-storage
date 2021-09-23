@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 from starlette.testclient import TestClient
 
-from blob_storage.app import App, FileStorage
+from blob_storage.base_app import App
+from blob_storage.file_storage import FileStorage
 
 
 @pytest.fixture
