@@ -1,45 +1,85 @@
 import hashlib
+from typing import AsyncIterator, Optional
+from contextlib import asynccontextmanager
 
 from starlette import status
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, StreamingResponse
 from starlette.routing import Route
 
 
-class App:
-    def __init__(self):
-        self._storage: dict[str, bytes] = {}
+from typing import Optional
 
-    async def upload_file(self, request: Request) -> Response:
+
+class MemoryStorage:
+    def __init__(self):
+        self._files: dict[str, bytes] = {}
+
+    @asynccontextmanager
+    async def find(self, key: str) -> AsyncIterator[Optional[AsyncIterator[bytes]]]:
+        """
+        Async context manager that provides an async iterator of `bytes` chunks
+        and closes all opened resources when the `async with` block ends.
+        """
+        content = self._files.get(key)
+        if content is None:
+            yield None
+            return
+        content_ = content  # microsoft/pyright/issues/599
+
+        async def _find() -> AsyncIterator[bytes]:
+            yield content_
+        yield _find()
+
+    async def upload(self, stream: AsyncIterator[bytes]) -> tuple[bool, str]:
+        """
+        :return: (file already exists, hash digest)
+        """
         h = hashlib.sha512()
 
         chunks = []
-        async for chunk in request.stream():
+        async for chunk in stream:
             chunks.append(chunk)
             h.update(chunk)
 
         file_hash = h.hexdigest()
-        if file_hash in self._storage:
-            return Response(file_hash, status_code=status.HTTP_200_OK)
+        if file_hash in self._files:
+            return True, file_hash
 
-        self._storage[file_hash] = b"".join(chunks)
-        return Response(file_hash, status_code=status.HTTP_201_CREATED)
+        self._files[file_hash] = b"".join(chunks)
+        return False, file_hash
+
+    async def delete(self, key: str) -> None:
+        """
+        :raises: KeyError
+        """
+        self._files.pop(key)
+
+
+class App:
+    def __init__(self, storage: MemoryStorage):
+        self._storage = storage
+
+    async def upload_file(self, request: Request) -> Response:
+        exists, file_hash = await self._storage.upload(request.stream())
+        status_code = status.HTTP_200_OK if exists else status.HTTP_201_CREATED
+        return Response(file_hash, status_code)
 
     async def download_file(self, request: Request) -> Response:
         file_hash = request.path_params["hash"]
 
-        file_contents = self._storage.get(file_hash)
-        if file_contents is None:
-            return Response("File not found", status_code=status.HTTP_404_NOT_FOUND)
+        async with self._storage.find(file_hash) as contents:
+            if contents is None:
+                return Response("File not found", status_code=status.HTTP_404_NOT_FOUND)
 
-        return Response(file_contents)
+            return StreamingResponse(contents)
 
     async def delete_file(self, request: Request) -> Response:
         file_hash = request.path_params["hash"]
 
         try:
-            self._storage.pop(file_hash)
+            await self._storage.delete(file_hash)
         except KeyError:
             return Response("File not found", status_code=status.HTTP_404_NOT_FOUND)
         else:
@@ -53,4 +93,5 @@ class App:
         ])
 
 
-app = App().asgi()
+storage = MemoryStorage()
+app = App(storage).asgi()

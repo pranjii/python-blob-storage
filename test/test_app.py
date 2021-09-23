@@ -1,12 +1,13 @@
 import pytest
 from starlette.testclient import TestClient
 
-from blob_storage.app import App
+from blob_storage.app import App, MemoryStorage
 
 
 @pytest.fixture
 def client():
-    return TestClient(App().asgi())
+    storage = MemoryStorage()
+    return TestClient(App(storage).asgi())
 
 
 def test_initial_app_has_no_files(client: TestClient):
