@@ -9,7 +9,7 @@ from starlette.responses import Response, StreamingResponse
 from starlette.routing import Route
 
 
-from typing import Optional
+
 
 
 Stream = AsyncIterator[bytes]
@@ -19,21 +19,19 @@ class MemoryStorage:
     def __init__(self):
         self._files: dict[str, bytes] = {}
 
-    @asynccontextmanager
-    async def find(self, key: str) -> AsyncIterator[Optional[Stream]]:
+    async def find(self, key: str) -> Optional[Stream]:
         """
         Async context manager that provides an async iterator of `bytes` chunks
         and closes all opened resources when the `async with` block ends.
         """
         content = self._files.get(key)
         if content is None:
-            yield None
-            return
+            return None
         content_ = content  # microsoft/pyright/issues/599
 
         async def _find() -> AsyncIterator[bytes]:
             yield content_
-        yield _find()
+        return _find()
 
     async def upload(self, stream: Stream) -> tuple[bool, str]:
         """
@@ -61,15 +59,16 @@ class MemoryStorage:
 
 
 class Storage(Protocol):
-    def find(self, /, key: str) -> AsyncContextManager[Optional[Stream]]:
+    async def find(self, /, key: str) -> Optional[Stream]:
         """
-        Async context manager that provides an async iterator of `bytes` chunks
-        and closes all opened resources when the `async with` block ends.
+        Find a binary file I/O object by unique key.
+
+        It's the responsibility of the caller to close it.
         """
 
     async def upload(self, /, stream: Stream) -> tuple[bool, str]:
         """
-        :return: (file already exists, hash digest)
+        :return: (file already exists, key)
         """
 
     async def delete(self, /, key: str) -> None:
@@ -90,11 +89,12 @@ class App:
     async def download_file(self, request: Request) -> Response:
         file_hash = request.path_params["hash"]
 
-        async with self._storage.find(file_hash) as contents:
-            if contents is None:
-                return Response("File not found", status_code=status.HTTP_404_NOT_FOUND)
+        stream = await self._storage.find(file_hash)
 
-            return StreamingResponse(contents)
+        if stream is None:
+            return Response("File not found", status_code=status.HTTP_404_NOT_FOUND)
+
+        return StreamingResponse(stream)
 
     async def delete_file(self, request: Request) -> Response:
         file_hash = request.path_params["hash"]
