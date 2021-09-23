@@ -14,6 +14,9 @@ from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse
 from starlette.routing import Route
 
+from blob_storage.method_dispatch import MethodDispatch
+
+
 Stream = AsyncIterator[bytes]
 
 
@@ -145,9 +148,11 @@ class App:
 
     def asgi(self) -> Starlette:
         return Starlette(routes=[
-            Route("/download/{hash:str}", self.download_file, methods=["GET"]),
-            Route("/upload", self.upload_file, methods=["POST"]),
-            Route("/delete/{hash:str}", self.delete_file, methods=["DELETE"]),
+            Route("/", self.upload_file, methods=["POST"]),
+            Route("/{hash:str}", MethodDispatch({
+                "GET": self.download_file,
+                "DELETE": self.delete_file,
+            })),
         ])
 
 

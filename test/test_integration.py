@@ -16,33 +16,33 @@ def client():
 
 
 def test_happy_path(client: TestClient):
-    upload_resp = client.post("/upload", data=b"Hello, world!")
+    upload_resp = client.post("/", data=b"Hello, world!")
     assert upload_resp.status_code == 201
 
     file_hash = upload_resp.text
 
-    download_resp = client.get("/download/{}".format(file_hash))
+    download_resp = client.get(file_hash)
     assert download_resp.status_code == 200
     assert download_resp.content == b"Hello, world!"
 
-    delete_resp = client.delete("/delete/{}".format(file_hash))
+    delete_resp = client.delete(file_hash)
     assert delete_resp.status_code == 200
 
 
 def test_uploading_existing_file(client: TestClient):
-    client.post("/upload", data=b"Test data")
-    assert client.post("/upload", data=b"Test data").status_code == 200
+    client.post("/", data=b"Test data")
+    assert client.post("/", data=b"Test data").status_code == 200
 
 
 def test_downloading_unknown_file(client: TestClient):
-    assert client.get("/download/abcdef01234").status_code == 404
+    assert client.get("/abcdef01234").status_code == 404
 
 
 def test_downloading_deleted_file(client: TestClient):
-    file_hash = client.post("/upload", data=b"Hello, world!").text
-    client.delete("/delete/{}".format(file_hash))
-    assert client.get("/download/{}".format(file_hash)).status_code == 404
+    file_hash = client.post("/", data=b"Hello, world!").text
+    client.delete(file_hash)
+    assert client.get(file_hash).status_code == 404
 
 
 def test_deleting_unknown_file(client: TestClient):
-    assert client.delete("/delete/abcdef01234").status_code == 404
+    assert client.delete("/abcdef01234").status_code == 404
