@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import os
 import shutil
 from pathlib import Path
 from typing import AsyncIterator, Optional, Protocol, cast
@@ -72,6 +73,8 @@ class FileStorage:
         await asyncio.to_thread(lambda: temp_dir.mkdir(parents=True, exist_ok=True))
 
         async with NamedTemporaryFile(mode="wb", dir=temp_dir, delete=False) as temp_file:
+            temp_file: AsyncBufferedIOBase
+
             h = hashlib.sha512()
             async for chunk in stream:
                 await temp_file.write(chunk)
@@ -79,12 +82,12 @@ class FileStorage:
             file_hash = h.hexdigest()
 
             persistent_path = self._file_path_from_hash(file_hash)
+            temp_file_name = cast(str, temp_file.name)
 
             exists = await asyncio.to_thread(persistent_path.exists)
             if exists:
+                await asyncio.to_thread(lambda: os.unlink(temp_file_name))
                 return True, file_hash
-
-            temp_file_name = cast(str, temp_file.name)
 
             await temp_file.flush()
             await _move_file(source=Path(temp_file_name), destination=persistent_path)
