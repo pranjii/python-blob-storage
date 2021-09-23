@@ -12,19 +12,19 @@ Stream = AsyncIterator[bytes]
 
 
 class Storage(Protocol):
-    async def find(self, /, key: str) -> Optional[Stream]:
+    async def find(self, key: str, /) -> Optional[Stream]:
         """
         Find a binary file I/O object by unique key.
 
         It's the responsibility of the caller to close it.
         """
 
-    async def upload(self, /, stream: Stream) -> tuple[bool, str]:
+    async def upload(self, stream: Stream, /) -> tuple[bool, str]:
         """
         :return: (file already exists, key)
         """
 
-    async def delete(self, /, key: str) -> None:
+    async def delete(self, key: str, /) -> None:
         """
         :raises: KeyError
         """
