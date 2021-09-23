@@ -1,0 +1,78 @@
+openapi: "3.0.2"
+info:
+  title: "Python blob storage"
+  version: "0.1.0"
+servers:
+  - url: "http://127.0.0.1:8108"
+
+paths:
+  "/":
+    post:
+      summary: "Upload a file"
+
+      requestBody:
+        description: "The contents of the file"
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+                type: string
+                format: binary
+
+      responses:
+        "200":
+          description: "File with the same hash already exists"
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/Hash"
+        "201":
+          description: "File created"
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/Hash"
+
+  "/{hash}":
+    get:
+      summary: "Download a file"
+
+      parameters:
+        - $ref: "#/components/parameters/Hash"
+
+      responses:
+        "200":
+          description: "File found"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: "File not founfd"
+
+    delete:
+      summary: "Delete a file"
+
+      parameters:
+        - $ref: "#/components/parameters/Hash"
+
+      responses:
+        "200":
+          description: "File deleted successfuly"
+        "404":
+          description: "File not founfd"
+
+
+components:
+  parameters:
+    Hash:
+      in: path
+      name: hash
+      required: true
+      schema:
+        $ref: "#/components/schemas/Hash"
+  schemas:
+    Hash:
+      type: string
+      example: "39ca7ce9ecc69f696bf7d20bb23dd1521b641f806cc7a6b724aaa6cdbffb3a023ff98ae73225156b2c6c9ceddbfc16f5453e8fa49fc10e5d96a3885546a46ef4"
