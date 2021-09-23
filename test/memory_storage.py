@@ -21,6 +21,7 @@ class MemoryStorage:
 
         async def _find() -> AsyncIterator[bytes]:
             yield content_
+
         return _find()
 
     async def upload(self, stream: Stream) -> tuple[bool, str]:

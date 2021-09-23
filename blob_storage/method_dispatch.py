@@ -14,6 +14,7 @@ class MethodDispatch:
     """
     ASGI application do dispatch a request based on its method (HTTP verb)
     """
+
     def __init__(self, handlers: Mapping[Method, Handler]):
         self._handlers: Mapping[str, Handler] = handlers
 

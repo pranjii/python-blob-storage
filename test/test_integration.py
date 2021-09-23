@@ -12,7 +12,7 @@ from blob_storage.file_storage import FileStorage
 def client():
     KB = 1024
     with tempfile.TemporaryDirectory() as temp_dir:
-        storage = FileStorage(Path(temp_dir), chunk_size=32*KB)
+        storage = FileStorage(Path(temp_dir), chunk_size=32 * KB)
         yield TestClient(App(storage).asgi())
 
 

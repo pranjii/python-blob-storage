@@ -24,6 +24,7 @@ async def _move_file(source: Path, destination: Path):
     def sync_move_file():
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(source, destination)
+
     await asyncio.to_thread(sync_move_file)
 
 
