@@ -1,5 +1,5 @@
 import hashlib
-from typing import AsyncIterator, Optional
+from typing import AsyncContextManager, AsyncIterator, Optional, Protocol
 from contextlib import asynccontextmanager
 
 from starlette import status
@@ -12,12 +12,15 @@ from starlette.routing import Route
 from typing import Optional
 
 
+Stream = AsyncIterator[bytes]
+
+
 class MemoryStorage:
     def __init__(self):
         self._files: dict[str, bytes] = {}
 
     @asynccontextmanager
-    async def find(self, key: str) -> AsyncIterator[Optional[AsyncIterator[bytes]]]:
+    async def find(self, key: str) -> AsyncIterator[Optional[Stream]]:
         """
         Async context manager that provides an async iterator of `bytes` chunks
         and closes all opened resources when the `async with` block ends.
@@ -32,7 +35,7 @@ class MemoryStorage:
             yield content_
         yield _find()
 
-    async def upload(self, stream: AsyncIterator[bytes]) -> tuple[bool, str]:
+    async def upload(self, stream: Stream) -> tuple[bool, str]:
         """
         :return: (file already exists, hash digest)
         """
@@ -57,8 +60,26 @@ class MemoryStorage:
         self._files.pop(key)
 
 
+class Storage(Protocol):
+    def find(self, /, key: str) -> AsyncContextManager[Optional[Stream]]:
+        """
+        Async context manager that provides an async iterator of `bytes` chunks
+        and closes all opened resources when the `async with` block ends.
+        """
+
+    async def upload(self, /, stream: Stream) -> tuple[bool, str]:
+        """
+        :return: (file already exists, hash digest)
+        """
+
+    async def delete(self, /, key: str) -> None:
+        """
+        :raises: KeyError
+        """
+
+
 class App:
-    def __init__(self, storage: MemoryStorage):
+    def __init__(self, storage: Storage):
         self._storage = storage
 
     async def upload_file(self, request: Request) -> Response:
